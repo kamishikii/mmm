@@ -51,3 +51,10 @@ async function trackUrl(id){
   _urls.set(id, u);
   return u;
 }
+async function dbPut(rec){
+  const db = await dbOpen();
+  return new Promise((res, rej) => {
+    const rq = db.transaction('tracks','readwrite').objectStore('tracks').put(rec);
+    rq.onsuccess = () => res(rq.result); rq.onerror = () => rej(rq.error);
+  });
+}
