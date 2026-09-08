@@ -19,7 +19,7 @@ Screens.playlist = {
           : '<div class="spacer"></div><button class="iconbtn" id="b-menu">' + ICONS.dots + '</button>') +
       '</header>' +
       (editMode
-        ? '<div class="sect">Зажми песню и перетащи, чтобы поменять порядок</div>' +
+        ? '<div class="sect">♡ ︎</div>' +
           '<div class="rows"><button class="row" id="b-add2"><span class="rico tile">' + ICONS.plus + '</span><span class="rtitle blue">Добавить музыку</span></button></div>'
         : '<div class="hero">' +
             '<div class="hero-cover" style="background:' + gradFor(pl.name) + '">' + ICONS.note + '</div>' +
