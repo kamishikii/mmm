@@ -3,6 +3,7 @@ const Screens = {};
 const App = {
   stack: [],
   start(){
+    if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
     this.stack = [{ screen: 'home', params: {} }];
     history.replaceState({ d: 1 }, '');
     this.show();
