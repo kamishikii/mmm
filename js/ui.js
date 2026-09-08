@@ -1,4 +1,4 @@
-/* Иконки, шторки, тосты, форматирование, строки треков */
+/* Иконки, шторки, тосты, форматирование, строки треков, редактор */
 const ICONS = {
   back:'<svg viewBox="0 0 24 24"><path d="M19 12H5m7-7-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   search:'<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
@@ -15,21 +15,37 @@ const ICONS = {
   check:'<svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   x:'<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
   play:'<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>',
-  pause:'<svg viewBox="0 0 24 24"><path d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor"/></svg>'
+  pause:'<svg viewBox="0 0 24 24"><path d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor"/></svg>',
+  prev:'<svg viewBox="0 0 24 24"><path d="M19 5v14L8 12l11-7z" fill="currentColor"/><rect x="5" y="5" width="2.5" height="14" rx="1" fill="currentColor"/></svg>',
+  next:'<svg viewBox="0 0 24 24"><path d="M5 5v14l11-7L5 5z" fill="currentColor"/><rect x="16.5" y="5" width="2.5" height="14" rx="1" fill="currentColor"/></svg>',
+  shuffle:'<svg viewBox="0 0 24 24"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  repeat:'<svg viewBox="0 0 24 24"><path d="m17 1 4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  queue:'<svg viewBox="0 0 24 24"><path d="M4 6h16M4 11h16M4 16h9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="m16 14 6 3.5-6 3.5v-7z" fill="currentColor"/></svg>'
 };
 
 function $(s, r){ return (r || document).querySelector(s); }
 function $$(s, r){ return Array.from((r || document).querySelectorAll(s)); }
 function esc(s){ return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
-/* детерминированный градиент-«обложка» из названия */
 function gradFor(str){
   let h = 0; for (const c of String(str)) h = (h * 31 + c.charCodeAt(0)) | 0;
   const h1 = Math.abs(h) % 360, h2 = (h1 + 45) % 360;
   return 'linear-gradient(135deg, hsl(' + h1 + ',55%,45%), hsl(' + h2 + ',65%,28%))';
 }
-function coverHTML(name, cls){
-  return '<div class="cover ' + (cls || '') + '" style="background:' + gradFor(name) + '">' + ICONS.note + '</div>';
+/* обложка: своя картинка, если есть, иначе градиент */
+function coverHTML(t, cls){
+  const isObj = typeof t === 'object';
+  const name = isObj ? (t.title || '') : String(t);
+  const url = isObj ? t.coverUrl : null;
+  const bg = url
+    ? 'background-image:url(' + url + ');background-size:cover;background-position:center'
+    : 'background:' + gradFor(name);
+  return '<div class="cover ' + (cls || '') + '" style="' + bg + '">' + (url ? '' : ICONS.note) + '</div>';
+}
+/* создать object-URL для сохранённых обложек */
+function withCovers(tracks){
+  tracks.forEach(t => { if (t.cover && !t.coverUrl) { try { t.coverUrl = URL.createObjectURL(t.cover); } catch(e){} } });
+  return tracks;
 }
 function fmtTime(s){ s = Math.round(s || 0); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
 function plural(n, f){ const a = n % 10, b = n % 100; if (a === 1 && b !== 11) return f[0]; if (a >= 2 && a <= 4 && (b < 12 || b > 14)) return f[1]; return f[2]; }
@@ -52,7 +68,7 @@ function toast(msg){
   clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2500);
 }
 
-/* ---------- нижние шторки ---------- */
+/* ---------- шторки ---------- */
 let _sheetToken = 0;
 function openSheet(html){
   _sheetToken++;
@@ -86,10 +102,48 @@ function promptSheet(title, initial, okLabel, onOk){
 }
 function confirmSheet(text, onYes){ sheetList(text, [{ label: 'Да, удалить', danger: true, onClick: onYes }]); }
 
+/* ---------- редактор трека (название, исполнитель, обложка) ---------- */
+function openEditSheet(t, onSaved){
+  let newCover = null;
+  openSheet('<div class="sheet-title">Информация о треке</div><div class="sheet-pad">' +
+    '<input id="ed-title" class="text-input" value="' + esc(t.title) + '" placeholder="Название">' +
+    '<input id="ed-artist" class="text-input" value="' + esc(t.artist) + '" placeholder="Исполнитель">' +
+    '<img id="ed-preview" class="ed-preview' + (t.coverUrl ? '' : ' hidden') + '" src="' + (t.coverUrl || '') + '">' +
+    '<button class="btn-primary small" id="ed-cover">Выбрать обложку</button>' +
+    '<button class="btn-primary" id="ed-save">Сохранить</button></div>');
+  $('#ed-cover').onclick = () => {
+    const i = document.createElement('input');
+    i.type = 'file'; i.accept = 'image/*';
+    i.onchange = () => {
+      const f = i.files[0]; if (!f) return;
+      newCover = f;
+      const p = $('#ed-preview');
+      p.src = URL.createObjectURL(f);
+      p.classList.remove('hidden');
+    };
+    i.click();
+  };
+  $('#ed-save').onclick = async () => {
+    const rec = Object.assign({}, t, {
+      title: $('#ed-title').value.trim() || t.title,
+      artist: $('#ed-artist').value.trim() || t.artist
+    });
+    if (newCover) {
+      rec.cover = newCover;
+      rec.coverUrl = URL.createObjectURL(newCover);
+    }
+    await dbPut(rec);
+    Object.assign(t, rec);   // обновляем объект в памяти
+    closeSheet();
+    toast('Сохранено');
+    onSaved && onSaved(rec);
+  };
+}
+
 /* ---------- строка трека ---------- */
 function trackRowHTML(t){
   return '<div class="row track" data-id="' + t.id + '">' +
-    coverHTML(t.title) +
+    coverHTML(t) +
     '<div class="meta"><div class="t">' + esc(t.title) + '</div><div class="a">' + esc(t.artist) + '</div></div>' +
     '<div class="dur">' + fmtTime(t.duration) + '</div>' +
     '<button class="iconbtn sm" data-dots="' + t.id + '">' + ICONS.dots + '</button></div>';
