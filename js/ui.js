@@ -148,3 +148,48 @@ function trackRowHTML(t){
     '<div class="dur">' + fmtTime(t.duration) + '</div>' +
     '<button class="iconbtn sm" data-dots="' + t.id + '">' + ICONS.dots + '</button></div>';
 }
+/* Перетаскивание строк долгим нажатием (~0.4 сек) */
+let suppressClick = false;
+function makeDraggable(container, opts){
+  opts = opts || {};
+  let timer = null, active = false, row = null, pid = null, sx = 0, sy = 0, moved = false;
+  const rows = () => Array.from(container.querySelectorAll('.track'));
+  function stop(){
+    clearTimeout(timer); timer = null;
+    if (active && row) {
+      row.classList.remove('dragging');
+      const ids = rows().map(r => r.dataset.id);
+      const wasMoved = moved;
+      active = false; row = null; moved = false;
+      suppressClick = true; setTimeout(() => { suppressClick = false; }, 350);
+      if (wasMoved && opts.onCommit) opts.onCommit(ids);
+    } else { active = false; row = null; }
+  }
+  container.addEventListener('pointerdown', e => {
+    if (opts.enabled && !opts.enabled()) return;
+    if (e.target.closest('[data-dots]') || e.target.closest('.cbx')) return;
+    const r = e.target.closest('.track');
+    if (!r) return;
+    pid = e.pointerId; sx = e.clientX; sy = e.clientY; row = r;
+    timer = setTimeout(() => {
+      active = true;
+      row.classList.add('dragging');
+      if (navigator.vibrate) navigator.vibrate(30);
+    }, 400);
+  });
+  container.addEventListener('pointermove', e => {
+    if (timer && (Math.abs(e.clientX - sx) > 10 || Math.abs(e.clientY - sy) > 10)) { clearTimeout(timer); timer = null; }
+    if (!active || e.pointerId !== pid) return;
+    moved = true;
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const over = el && el.closest ? el.closest('.track') : null;
+    if (over && over !== row && container.contains(over)) {
+      const rect = over.getBoundingClientRect();
+      const before = (e.clientY - rect.top) < rect.height / 2;
+      container.insertBefore(row, before ? over : over.nextSibling);
+    }
+  });
+  container.addEventListener('touchmove', e => { if (active) e.preventDefault(); }, { passive: false });
+  window.addEventListener('pointerup', stop);
+  window.addEventListener('pointercancel', stop);
+}
