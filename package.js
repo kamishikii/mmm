@@ -1,0 +1,11 @@
+{
+  "name": "my-music",
+  "version": "1.0.0",
+  "dependencies": {
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/android": "^6.2.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.2.0"
+  }
+}
