@@ -6,6 +6,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -33,13 +35,54 @@ jobs:
       - name: Add android
         run: npx cap add android
 
+      - name: Stable signing key (create once)
+        run: |
+          if [ ! -f signing/my-key.jks ]; then
+            mkdir -p signing
+            keytool -genkeypair -v -keystore signing/my-key.jks -alias mykey -keyalg RSA -keysize 2048 -validity 10000 -storepass 12345678 -keypass 12345678 -dname "CN=MyMusic, OU=Me, O=Me, C=RU"
+            git config user.name "github-actions"
+            git config user.email "github-actions@github.com"
+            git add signing/my-key.jks
+            git commit -m "add signing key"
+            git push
+          fi
+
+      - name: Patch signing config
+        run: |
+          python3 - <<'EOF'
+          p = 'android/app/build.gradle'
+          s = open(p).read()
+          sign = """    signingConfigs {
+              mykey {
+                  storeFile file('../../signing/my-key.jks')
+                  storePassword '12345678'
+                  keyAlias 'mykey'
+                  keyPassword '12345678'
+              }
+          }
+          """
+          s = s.replace('android {', 'android {\n' + sign, 1)
+          s = s.replace('buildTypes {', "buildTypes {\n        debug {\n            signingConfig signingConfigs.mykey\n        }", 1)
+          open(p, 'w').write(s)
+          EOF
+
       - name: Build APK
         run: |
           chmod +x android/gradlew
           cd android && ./gradlew assembleDebug
 
-      - name: Upload APK
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
           path: android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Commit APK to repo
+        run: |
+          mkdir -p apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk apk/app-debug.apk
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add apk/app-debug.apk
+          git commit -m "update apk" || echo "apk not changed"
+          git push
