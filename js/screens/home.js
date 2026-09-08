@@ -1,7 +1,7 @@
 /* Экран 1: главная («Моя музыка») */
 Screens.home = {
   async render(){
-    const tracks = await dbAll();
+    const tracks = withCovers(await dbAll());
     const app = $('#app');
     app.innerHTML =
       '<header class="topbar">' +
@@ -41,8 +41,16 @@ Screens.home = {
     app.onclick = e => {
       const go = e.target.closest('[data-go]');
       if (go) { App.go(go.dataset.go); return; }
+
+      /* три точки у песни -> открыть полноэкранный плеер */
       const dots = e.target.closest('[data-dots]');
-      if (dots) { trackMenu(+dots.dataset.dots, tracks); return; }
+      if (dots) {
+        const id = +dots.dataset.dots;
+        const i = tracks.findIndex(t => t.id === id);
+        if (i > -1) { Player.play(tracks, i); App.go('player'); }
+        return;
+      }
+
       const row = e.target.closest('.track');
       if (row) {
         const id = +row.dataset.id;
@@ -52,20 +60,7 @@ Screens.home = {
   }
 };
 
-/* меню трека (три точки) */
-function trackMenu(id, all){
-  const t = all.find(x => x.id === id); if (!t) return;
-  sheetList(t.title, [
-    { label: 'Добавить в плейлист', onClick: () => addToPlaylistSheet(id) },
-    { label: 'Удалить из моей музыки', danger: true, onClick: async () => {
-        await dbDel(id);
-        const pls = Store.all(); let ch = false;
-        pls.forEach(p => { const i = p.trackIds.indexOf(id); if (i > -1) { p.trackIds.splice(i, 1); ch = true; } });
-        if (ch) Store.save(pls);
-        toast('Аудиозапись удалена'); refresh();
-      } }
-  ]);
-}
+/* меню «добавить в плейлист» (вызывается из экрана плеера) */
 function addToPlaylistSheet(trackId){
   const pls = Store.all();
   sheetList('Добавить в плейлист',
