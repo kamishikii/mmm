@@ -5,7 +5,7 @@ Screens.playlist_edit = {
     const app = $('#app');
     if (!pl) { app.innerHTML = '<div class="empty">Плейлист не найден</div>'; return; }
 
-    const tracks = await dbAll();
+    const tracks = withCovers(await dbAll());
     const sel = new Set(pl.trackIds);
 
     app.innerHTML =
@@ -18,7 +18,7 @@ Screens.playlist_edit = {
       '<div class="tracks" id="e-list">' +
         (tracks.length ? tracks.map(t =>
           '<div class="row track" data-id="' + t.id + '">' +
-            coverHTML(t.title) +
+            coverHTML(t) +
             '<div class="meta"><div class="t">' + esc(t.title) + '</div><div class="a">' + esc(t.artist) + '</div></div>' +
             '<span class="cbx' + (sel.has(t.id) ? ' on' : '') + '">' + ICONS.check + '</span></div>'
         ).join('') : '<div class="empty">' + ICONS.note + '<p>Сначала добавьте музыку с устройства</p><button class="btn-primary small" id="e-go-add">Добавить аудиозапись</button></div>') +
