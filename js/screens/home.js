@@ -1,8 +1,21 @@
-/* Экран 1: главная («Моя музыка»), без лишних вкладок */
+/* Экран 1: главная («Моя музыка») */
 Screens.home = {
   async render(){
     const tracks = withCovers(await dbAll())
       .concat(typeof remoteTracks === 'function' ? await remoteTracks() : []);
+
+    /* сортировка: сохранённый порядок, а новинки (без позиции) — сверху */
+    const order = getOrder();
+    const pos = {}; order.forEach((id, i) => { pos[String(id)] = i; });
+    const sorted = tracks.slice().sort((a, b) => {
+      const ia = pos[String(a.id)], ib = pos[String(b.id)];
+      const ha = ia === undefined, hb = ib === undefined;
+      if (ha && hb) return (b.added || (typeof b.id === 'number' ? b.id : 0)) - (a.added || (typeof a.id === 'number' ? a.id : 0));
+      if (ha) return -1;
+      if (hb) return 1;
+      return ia - ib;
+    });
+
     const app = $('#app');
     app.innerHTML =
       '<header class="topbar">' +
@@ -17,13 +30,27 @@ Screens.home = {
       '<div id="h-list" class="tracks"></div>';
 
     const list = $('#h-list');
+    let current = sorted.slice();
+    let filtered = false;
     const draw = arr => {
-      list.innerHTML = arr.length
-        ? arr.map(trackRowHTML).join('')
+      current = arr.slice();
+      list.innerHTML = current.length
+        ? current.map(trackRowHTML).join('')
         : '<div class="empty">' + ICONS.note + '<p>В вашей музыке пока пусто</p><button class="btn-primary small" id="h-add">Добавить аудиозапись</button></div>';
       const b = $('#h-add'); if (b) b.onclick = () => App.go('add_music');
     };
-    draw(tracks);
+    draw(sorted);
+
+    /* перетаскивание: только когда поиск не включён */
+    makeDraggable(list, {
+      enabled: () => !filtered,
+      onCommit: ids => {
+        setOrder(ids);
+        sorted.sort((a, b) => ids.indexOf(String(a.id)) - ids.indexOf(String(b.id)));
+        current = sorted.slice();
+        toast('Порядок сохранён');
+      }
+    });
 
     $('#h-back').onclick = () => App.back();
     $('#h-dl').onclick = () => {
@@ -43,23 +70,25 @@ Screens.home = {
     };
     $('#h-search').oninput = e => {
       const q = e.target.value.toLowerCase().trim();
-      draw(tracks.filter(t => (t.title + ' ' + t.artist).toLowerCase().includes(q)));
+      filtered = !!q;
+      draw(q ? sorted.filter(t => (t.title + ' ' + t.artist).toLowerCase().includes(q)) : sorted);
     };
 
     app.onclick = e => {
+      if (suppressClick) return;
       const go = e.target.closest('[data-go]');
       if (go) { App.go(go.dataset.go); return; }
       const dots = e.target.closest('[data-dots]');
       if (dots) {
         const sid = dots.dataset.dots;
-        const i = tracks.findIndex(t => String(t.id) === sid);
-        if (i > -1) { Player.play(tracks, i); App.go('player'); }
+        const i = current.findIndex(t => String(t.id) === sid);
+        if (i > -1) { Player.play(current, i); App.go('player'); }
         return;
       }
       const row = e.target.closest('.track');
       if (row) {
         const sid = row.dataset.id;
-        Player.play(tracks, tracks.findIndex(t => String(t.id) === sid));
+        Player.play(current, current.findIndex(t => String(t.id) === sid));
       }
     };
   }
