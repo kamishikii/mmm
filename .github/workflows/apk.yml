@@ -12,77 +12,97 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Node
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Java
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      - name: Install deps
+      - name: Install Dependencies
         run: npm install
 
-      - name: Prepare www
+      - name: Prepare WWW
         run: |
+          rm -rf www
           mkdir -p www
           cp index.html www/
           cp -r css js www/
 
-      - name: Add android
+      - name: Clean Android
+        run: rm -rf android
+
+      - name: Add Android
         run: npx cap add android
 
-      - name: Stable signing key (create once)
+      - name: Create Signing Key (if not exists)
         run: |
           if [ ! -f signing/my-key.jks ]; then
             mkdir -p signing
             keytool -genkeypair -v -keystore signing/my-key.jks -alias mykey -keyalg RSA -keysize 2048 -validity 10000 -storepass 12345678 -keypass 12345678 -dname "CN=MyMusic, OU=Me, O=Me, C=RU"
-            git config user.name "github-actions"
-            git config user.email "github-actions@github.com"
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
             git add signing/my-key.jks
-            git commit -m "add signing key"
-            git push
+            git commit -m "Add signing key" || echo "Key already tracked"
+            git push || echo "Push failed but continuing"
           fi
 
-      - name: Patch signing config
+      - name: Patch build.gradle
         run: |
-          python3 - <<'EOF'
-          p = 'android/app/build.gradle'
-          s = open(p).read()
-          sign = """    signingConfigs {
-              mykey {
-                  storeFile file('../../signing/my-key.jks')
-                  storePassword '12345678'
-                  keyAlias 'mykey'
-                  keyPassword '12345678'
-              }
-          }
-          """
-          s = s.replace('android {', 'android {\n' + sign, 1)
-          s = s.replace('buildTypes {', "buildTypes {\n        debug {\n            signingConfig signingConfigs.mykey\n        }", 1)
-          open(p, 'w').write(s)
-          EOF
+          python3 << 'PYTHON_EOF'
+          import os
+          
+          gradle_path = 'android/app/build.gradle'
+          with open(gradle_path, 'r') as f:
+              content = f.read()
+          
+          # Add signing config
+          signing_config = '''    signingConfigs {
+        mykey {
+            storeFile file('../../signing/my-key.jks')
+            storePassword '12345678'
+            keyAlias 'mykey'
+            keyPassword '12345678'
+        }
+    }
+'''
+          
+          # Insert after android {
+          if 'signingConfigs {' not in content:
+              content = content.replace('android {', 'android {\n' + signing_config, 1)
+          
+          # Apply to debug build
+          if 'debug {\n            signingConfig' not in content:
+              content = content.replace('buildTypes {', 'buildTypes {\n        debug {\n            signingConfig signingConfigs.mykey\n        }\n        release {\n        }', 1)
+          
+          with open(gradle_path, 'w') as f:
+              f.write(content)
+          
+          print("build.gradle patched successfully")
+          PYTHON_EOF
 
       - name: Build APK
         run: |
-          chmod +x android/gradlew
-          cd android && ./gradlew assembleDebug
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
 
-      - name: Upload APK artifact
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
           path: android/app/build/outputs/apk/debug/app-debug.apk
 
-      - name: Commit APK to repo
+      - name: Commit APK to Repo
         run: |
           mkdir -p apk
           cp android/app/build/outputs/apk/debug/app-debug.apk apk/app-debug.apk
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add apk/app-debug.apk
-          git commit -m "update apk" || echo "apk not changed"
-          git push
+          git commit -m "Update APK" || echo "No changes to commit"
+          git push || echo "Push failed"
