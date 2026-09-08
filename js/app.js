@@ -7,7 +7,7 @@ const App = {
     this.stack = [{ screen: 'home', params: {} }];
     history.replaceState({ d: 1 }, '');
     this.show();
-    window.addEventListener('popstate', () => {   // системная кнопка «назад»
+    window.addEventListener('popstate', () => {
       if (this.stack.length > 1) { this.stack.pop(); this.show(); }
     });
   },
@@ -27,7 +27,13 @@ const App = {
     closeSheet();
     const s = this.cur();
     $('#app').innerHTML = '<div class="loading">Загрузка…</div>';
-    await Screens[s.screen].render(s.params || {});
+    try {
+      if (!Screens[s.screen]) throw new Error('экран "' + s.screen + '" не найден (файл не подключён?)');
+      await Screens[s.screen].render(s.params || {});
+    } catch (err) {
+      $('#app').innerHTML = '<div class="empty"><p>Ошибка на экране «' + s.screen + '»:<br>' + err.message + '</p></div>';
+      console.error(err);
+    }
     window.scrollTo(0, 0);
   }
 };
