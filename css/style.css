@@ -122,3 +122,27 @@ body.playing .bottombar{bottom:70px}
 .toast{position:fixed;bottom:110px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.78);color:#fff;padding:9px 16px;border-radius:10px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:60;max-width:90%}
 .toast.show{opacity:1}
 .loading{padding:50px;text-align:center;color:var(--gray)}
+
+/* ---------- полноэкранный плеер ---------- */
+.iconbtn.gray{color:#9aa4b1}
+.iconbtn.gray.active{color:var(--blue)}
+.iconbtn.dark{color:#000}
+.iconbtn.big svg{width:34px;height:34px}
+.iconbtn.huge svg{width:56px;height:56px}
+.pcover-wrap{display:flex;justify-content:center;padding:8px 0 28px}
+.pcover{width:min(78vw,340px);height:min(78vw,340px);border-radius:16px;background-color:var(--field);background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.9);box-shadow:0 12px 40px rgba(0,0,0,.15)}
+.pcover svg{width:80px;height:80px}
+.pseek{padding:0 20px}
+.pseek input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:2px;background:var(--line);border-radius:2px;outline:none;margin:0}
+.pseek input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--blue)}
+.pseek input[type=range]::-moz-range-thumb{width:14px;height:14px;border:0;border-radius:50%;background:var(--blue)}
+.ptime{display:flex;justify-content:space-between;color:var(--gray);font-size:15px;margin-top:8px}
+.ptitle-row{position:relative;display:flex;align-items:center;padding:28px 12px 0}
+.ptitle{flex:1;text-align:center;min-width:0}
+.ptitle h2{margin:0 0 6px;font-size:24px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.partist{color:var(--blue);font-size:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ptitle-row .edit{position:absolute;right:10px;top:28px}
+.pctrls{display:flex;align-items:center;justify-content:space-between;padding:30px 18px 0}
+.pbottom{display:flex;align-items:center;justify-content:space-between;padding:30px 26px calc(16px + env(safe-area-inset-bottom))}
+.ed-preview{width:120px;height:120px;border-radius:12px;object-fit:cover;margin:0 auto}
+
