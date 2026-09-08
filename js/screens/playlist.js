@@ -1,11 +1,11 @@
-/* Экран 3: открытый плейлист (без кнопок «Слушать» и «Перемешать все») */
+/* Экран 3: открытый плейлист (без «Слушать» и «Перемешать все») */
 Screens.playlist = {
   async render(params){
     const pl = Store.get(params.id);
     const app = $('#app');
     if (!pl) { app.innerHTML = '<div class="empty">Плейлист не найден</div>'; return; }
 
-    const tracks = await dbAll();
+    const tracks = withCovers(await dbAll());
     const byId = Object.fromEntries(tracks.map(t => [t.id, t]));
     const list = pl.trackIds.map(id => byId[id]).filter(Boolean);
 
@@ -40,11 +40,14 @@ Screens.playlist = {
       const d = e.target.closest('[data-dots]');
       if (d) {
         const id = +d.dataset.dots;
-        sheetList(byId[id].title, [{ label: 'Удалить из плейлиста', danger: true, onClick: () => {
-          pl.trackIds = pl.trackIds.filter(x => x !== id);
-          Store.update(pl.id, { trackIds: pl.trackIds });
-          toast('Удалено из плейлиста'); refresh();
-        } }]);
+        sheetList(byId[id].title, [
+          { label: 'Открыть в плеере', onClick: () => { Player.play(list, list.findIndex(t => t.id === id)); App.go('player'); } },
+          { label: 'Удалить из плейлиста', danger: true, onClick: () => {
+              pl.trackIds = pl.trackIds.filter(x => x !== id);
+              Store.update(pl.id, { trackIds: pl.trackIds });
+              toast('Удалено из плейлиста'); refresh();
+            } }
+        ]);
         return;
       }
       const r = e.target.closest('.track');
@@ -55,3 +58,12 @@ Screens.playlist = {
     };
   }
 };
+
+function playlistMenu(p){
+  if (!p) return;
+  sheetList(p.name, [
+    { label: 'Открыть', onClick: () => App.go('playlist', { id: p.id }) },
+    { label: 'Переименовать', onClick: () => promptSheet('Переименовать', p.name, 'Сохранить', name => { Store.update(p.id, { name }); refresh(); }) },
+    { label: 'Удалить', danger: true, onClick: () => confirmSheet('Удалить плейлист «' + p.name + '»?', () => { Store.remove(p.id); toast('Плейлист удалён'); refresh(); }) }
+  ]);
+}
