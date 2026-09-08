@@ -1,0 +1,96 @@
+/* Иконки, шторки, тосты, форматирование, строки треков */
+const ICONS = {
+  back:'<svg viewBox="0 0 24 24"><path d="M19 12H5m7-7-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  search:'<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+  mic:'<svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+  download:'<svg viewBox="0 0 24 24"><path d="M12 4v11m0 0 4-4m-4 4-4-4M5 19h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  upload:'<svg viewBox="0 0 24 24"><path d="M12 15V4m0 0-4 4m4-4 4 4M5 19h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  plist:'<svg viewBox="0 0 24 24"><path d="M4 7h8M4 12h8M4 17h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><g transform="translate(11,8) scale(0.55)"><path d="M9 18V5l12-2v13" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/><circle cx="6" cy="18" r="3" fill="none" stroke="currentColor" stroke-width="2.6"/><circle cx="18" cy="16" r="3" fill="none" stroke="currentColor" stroke-width="2.6"/></g></svg>',
+  note:'<svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="6" cy="18" r="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="18" cy="16" r="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
+  chevron:'<svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  caret:'<svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  dots:'<svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="19" r="1.8" fill="currentColor"/></svg>',
+  plus:'<svg viewBox="0 0 24 24"><path d="M5 8h11M5 13h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M17 12v7M13.5 15.5h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+  pencil:'<svg viewBox="0 0 24 24"><path d="M4 20l1-4L16.5 4.5a2.1 2.1 0 0 1 3 3L8 19l-4 1Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>',
+  check:'<svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  x:'<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
+  play:'<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>',
+  pause:'<svg viewBox="0 0 24 24"><path d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor"/></svg>'
+};
+
+function $(s, r){ return (r || document).querySelector(s); }
+function $$(s, r){ return Array.from((r || document).querySelectorAll(s)); }
+function esc(s){ return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+/* детерминированный градиент-«обложка» из названия */
+function gradFor(str){
+  let h = 0; for (const c of String(str)) h = (h * 31 + c.charCodeAt(0)) | 0;
+  const h1 = Math.abs(h) % 360, h2 = (h1 + 45) % 360;
+  return 'linear-gradient(135deg, hsl(' + h1 + ',55%,45%), hsl(' + h2 + ',65%,28%))';
+}
+function coverHTML(name, cls){
+  return '<div class="cover ' + (cls || '') + '" style="background:' + gradFor(name) + '">' + ICONS.note + '</div>';
+}
+function fmtTime(s){ s = Math.round(s || 0); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+function plural(n, f){ const a = n % 10, b = n % 100; if (a === 1 && b !== 11) return f[0]; if (a >= 2 && a <= 4 && (b < 12 || b > 14)) return f[1]; return f[2]; }
+function relTime(ts){
+  const d = Date.now() - ts, min = Math.floor(d / 60000);
+  if (min < 1) return 'только что';
+  if (min < 60) return min + ' ' + plural(min, ['минуту','минуты','минут']) + ' назад';
+  const h = Math.floor(min / 60);
+  if (h < 24) return h + ' ' + plural(h, ['час','часа','часов']) + ' назад';
+  const days = Math.floor(h / 24);
+  if (days < 7) return days + ' ' + plural(days, ['день','дня','дней']) + ' назад';
+  const w = Math.floor(days / 7);
+  if (w < 5) return w + ' ' + plural(w, ['неделю','недели','недель']) + ' назад';
+  const mo = Math.floor(days / 30);
+  return mo + ' ' + plural(mo, ['месяц','месяца','месяцев']) + ' назад';
+}
+
+function toast(msg){
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+/* ---------- нижние шторки ---------- */
+let _sheetToken = 0;
+function openSheet(html){
+  _sheetToken++;
+  const s = $('#sheet'); s.innerHTML = html;
+  requestAnimationFrame(() => s.classList.add('open'));
+  $('#sheet-backdrop').classList.add('open');
+}
+function closeSheet(){
+  const tok = _sheetToken;
+  $('#sheet').classList.remove('open');
+  $('#sheet-backdrop').classList.remove('open');
+  setTimeout(() => { if (tok === _sheetToken) $('#sheet').innerHTML = ''; }, 300);
+}
+function sheetList(title, items){
+  openSheet('<div class="sheet-title">' + esc(title) + '</div>' +
+    items.map((it, i) => '<button class="sheet-item' + (it.danger ? ' danger' : '') + '" data-i="' + i + '">' + esc(it.label) + '</button>').join('') +
+    '<button class="sheet-item cancel" data-i="-1">Отмена</button>');
+  $$('#sheet .sheet-item').forEach(btn => btn.onclick = () => {
+    const i = +btn.dataset.i; closeSheet();
+    if (i >= 0 && items[i].onClick) items[i].onClick();
+  });
+}
+function promptSheet(title, initial, okLabel, onOk){
+  openSheet('<div class="sheet-title">' + esc(title) + '</div><div class="sheet-pad">' +
+    '<input id="sheet-input" class="text-input" value="' + esc(initial || '') + '" placeholder="Название">' +
+    '<button class="btn-primary" id="sheet-ok">' + esc(okLabel || 'Сохранить') + '</button></div>');
+  setTimeout(() => { const i = $('#sheet-input'); i && i.focus(); }, 150);
+  const ok = () => { const v = $('#sheet-input').value.trim(); if (!v) { toast('Введите название'); return; } closeSheet(); onOk(v); };
+  $('#sheet-ok').onclick = ok;
+  $('#sheet-input').onkeydown = e => { if (e.key === 'Enter') ok(); };
+}
+function confirmSheet(text, onYes){ sheetList(text, [{ label: 'Да, удалить', danger: true, onClick: onYes }]); }
+
+/* ---------- строка трека ---------- */
+function trackRowHTML(t){
+  return '<div class="row track" data-id="' + t.id + '">' +
+    coverHTML(t.title) +
+    '<div class="meta"><div class="t">' + esc(t.title) + '</div><div class="a">' + esc(t.artist) + '</div></div>' +
+    '<div class="dur">' + fmtTime(t.duration) + '</div>' +
+    '<button class="iconbtn sm" data-dots="' + t.id + '">' + ICONS.dots + '</button></div>';
+}
