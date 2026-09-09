@@ -44,7 +44,11 @@ function coverHTML(t, cls){
 }
 /* создать object-URL для сохранённых обложек */
 function withCovers(tracks){
-  tracks.forEach(t => { if (t.cover && !t.coverUrl) { try { t.coverUrl = URL.createObjectURL(t.cover); } catch(e){} } });
+  tracks.forEach(t => {
+    if (t.coverUrl) return;
+    if (t.coverSrc) { t.coverUrl = t.coverSrc; return; }
+    if (t.cover) { try { t.coverUrl = URL.createObjectURL(t.cover); } catch(e){} }
+  });
   return tracks;
 }
 function fmtTime(s){ s = Math.round(s || 0); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
