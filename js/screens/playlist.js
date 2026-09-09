@@ -1,4 +1,4 @@
-/* Экран 3: открытый плейлист (+ режим редактирования порядка) */
+/ плейлист /
 Screens.playlist = {
   async render(params){
     const pl = Store.get(params.id);
