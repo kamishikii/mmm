@@ -53,17 +53,15 @@ Screens.home = {
     });
 
     $('#h-back').onclick = () => App.back();
-    $('#h-dl').onclick = () => {
-      if (typeof exportBackup === 'function') {
-        sheetList('Резервная копия', [
-          { label: 'Экспорт копии (файл .zip)', onClick: () => exportBackup() },
-          { label: 'Импорт копии из файла', onClick: () => {
-              const i = document.createElement('input');
-              i.type = 'file'; i.accept = '.zip,application/zip';
-              i.onchange = () => { if (i.files[0]) importBackup(i.files[0]); };
-              i.click();
-            } }
-        ]);
+    $('#h-dl').onclick = () => sheetList('Резервная копия', [
+  { label: 'Экспорт копии (файл .zip)', onClick: () => exportBackup() },
+  { label: 'Импорт копии из файла', onClick: () => {
+      const i = document.createElement('input');
+      i.type = 'file'; i.accept = '.zip,application/zip';
+      i.onchange = () => { if (i.files[0]) importBackup(i.files[0]); };
+      i.click();
+    } }
+]);
       } else {
         toast('Скачивание появится позже');
       }
