@@ -48,25 +48,48 @@ Screens.add_music = {
 
     $('#a-save').onclick = async () => {
       if (!pending.length) return;
-      $('#a-save').disabled = true; $('#a-save').textContent = 'Добавляем…';
+      const btn = $('#a-save');
+      btn.disabled = true;
+      let ok = 0, fail = 0, lastErr = '';
       for (const p of pending) {
-        const duration = await readDuration(p.file);
-        await dbAdd({ title: p.title, artist: p.artist, duration, blob: p.file, added: Date.now() });
+        btn.textContent = 'Добавляем… ' + (ok + fail + 1) + '/' + pending.length;
+        try {
+          const duration = await readDuration(p.file, 10000);
+          const rec = { title: p.title, artist: p.artist, duration, blob: p.file, added: Date.now() };
+          try {
+            await dbAdd(rec);
+          } catch (e1) {
+            console.error('FS add failed, fallback to IDB:', e1);
+            lastErr = (e1 && e1.message) || String(e1);
+            await dbAddIDB(rec);
+          }
+          ok++;
+        } catch (e) {
+          fail++;
+          lastErr = (e && e.message) || String(e);
+          console.error(e);
+        }
       }
-      toast('Добавлено аудиозаписей: ' + pending.length);
       pending = [];
-      App.reset('home');   // названия сразу видны на главной
+      btn.disabled = false;
+      btn.textContent = 'Добавить в мою музыку';
+      if (fail) toast('Добавлено ' + ok + ', с ошибкой ' + fail + ': ' + lastErr);
+      else toast('Добавлено треков: ' + ok);
+      App.reset('home');
     };
   }
 };
 
-function readDuration(blob){
+function readDuration(blob, timeout){
   return new Promise(res => {
+    let done = false;
+    const finish = v => { if (!done) { done = true; res(v); } };
+    const timer = setTimeout(() => finish(0), timeout || 10000);
     const a = document.createElement('audio');
     const u = URL.createObjectURL(blob);
     a.preload = 'metadata';
-    a.onloadedmetadata = () => { const d = a.duration || 0; URL.revokeObjectURL(u); res(d); };
-    a.onerror = () => { URL.revokeObjectURL(u); res(0); };
+    a.onloadedmetadata = () => { clearTimeout(timer); finish(a.duration || 0); URL.revokeObjectURL(u); };
+    a.onerror = () => { clearTimeout(timer); finish(0); URL.revokeObjectURL(u); };
     a.src = u;
   });
 }
