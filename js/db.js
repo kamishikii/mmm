@@ -146,3 +146,7 @@ async function trackUrl(id){
   _urls.set(id, u);
   return u;
 }
+/* запасной путь: добавить напрямую в IndexedDB (если файловый режим сбоит) */
+async function dbAddIDB(rec){
+  return idb(db => idbReq(db, 'readwrite', st => st.add(rec)));
+}
