@@ -1,8 +1,17 @@
-/* Хранилище: в APK — файлы в приватной папке приложения (надёжно),
+/* Хранилище: в APK — файлы в приватной папке приложения,
    на сайте — IndexedDB. Плюс повтор при ошибке "connection is closing". */
 
+let _db;   /* объявляем первым, чтобы никакая ошибка на старте не ломала остальное */
+
 const FS = (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Filesystem) ? Capacitor.Plugins.Filesystem : null;
-const DIR = FS ? Capacitor.Plugins.Filesystem.Directory.Documents : null;
+let DIR = null;
+if (FS) {
+  try {
+    DIR = (FS.Directory && FS.Directory.Documents) ? FS.Directory.Documents : 'DOCUMENTS';
+  } catch (e) {
+    DIR = 'DOCUMENTS';
+  }
+}
 
 /* метаданные для файлового режима */
 function metaAll(){ try { return JSON.parse(localStorage.getItem('vkm_meta')) || []; } catch(e){ return []; } }
@@ -28,7 +37,6 @@ async function fileSrc(path){
 }
 
 /* ---------- IndexedDB (режим сайта) ---------- */
-let _db;
 function dbOpen(){
   if (_db) return Promise.resolve(_db);
   return new Promise((res, rej) => {
@@ -134,6 +142,10 @@ async function dbGetCoverBlob(id){
   const t = await dbGet(id);
   return t ? (t.cover || null) : null;
 }
+/* запасной путь: добавить напрямую в IndexedDB (если файловый режим сбоит) */
+async function dbAddIDB(rec){
+  return idb(db => idbReq(db, 'readwrite', st => st.add(rec)));
+}
 
 /* ссылка для воспроизведения */
 const _urls = new Map();
@@ -145,8 +157,4 @@ async function trackUrl(id){
   const u = URL.createObjectURL(t.blob);
   _urls.set(id, u);
   return u;
-}
-/* запасной путь: добавить напрямую в IndexedDB (если файловый режим сбоит) */
-async function dbAddIDB(rec){
-  return idb(db => idbReq(db, 'readwrite', st => st.add(rec)));
 }
