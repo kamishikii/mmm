@@ -1,7 +1,7 @@
-/* Хранилище: в APK — файлы в приватной папке приложения,
-   на сайте — IndexedDB. Плюс повтор при ошибке "connection is closing". */
+/* Хранилище: в APK — файлы + IndexedDB как запасной,
+   на сайте — IndexedDB. Список всегда объединяет оба места. */
 
-let _db;   /* объявляем первым, чтобы никакая ошибка на старте не ломала остальное */
+let _db;
 
 const FS = (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Filesystem) ? Capacitor.Plugins.Filesystem : null;
 let DIR = null;
@@ -36,7 +36,7 @@ async function fileSrc(path){
   return Capacitor.convertFileSrc(u.uri);
 }
 
-/* ---------- IndexedDB (режим сайта) ---------- */
+/* ---------- IndexedDB ---------- */
 function dbOpen(){
   if (_db) return Promise.resolve(_db);
   return new Promise((res, rej) => {
@@ -66,14 +66,29 @@ async function idb(fn){
     }
   }
 }
+async function idbAllSafe(){
+  try { return await idb(db => idbReq(db, 'readonly', st => st.getAll())) || []; }
+  catch (e) { return []; }
+}
 
-/* ---------- общий интерфейс ---------- */
+/* ---------- общий интерфейс (объединяет оба хранилища) ---------- */
 async function dbAll(){
-  if (FS) return metaAll().map(m => Object.assign({}, m));
-  return idb(db => idbReq(db, 'readonly', st => st.getAll()));
+  if (!FS) return idb(db => idbReq(db, 'readonly', st => st.getAll()));
+  const metas = metaAll().map(m => Object.assign({}, m));
+  const idbTracks = await idbAllSafe();
+  const have = new Set(metas.map(m => String(m.id)));
+  return metas.concat(idbTracks.filter(t => !have.has(String(t.id))));
 }
 async function dbGet(id){
-  if (FS) return metaAll().find(m => String(m.id) === String(id)) || null;
+  if (FS) {
+    const m = metaAll().find(x => String(x.id) === String(id));
+    if (m) return m;
+    const num = +id;
+    if (!isNaN(num)) {
+      try { return (await idb(db => idbReq(db, 'readonly', st => st.get(num)))) || null; } catch (e) { return null; }
+    }
+    return null;
+  }
   return idb(db => idbReq(db, 'readonly', st => st.get(+id)));
 }
 async function dbAdd(rec){
@@ -118,6 +133,8 @@ async function dbDel(id){
       try { await FS.deleteFile({ directory: DIR, path: 'covers/' + m.id + '.bin' }); } catch(e){}
     }
     metaSave(list.filter(x => String(x.id) !== String(id)));
+    const num = +id;
+    if (!isNaN(num)) { try { await idb(db => idbReq(db, 'readwrite', st => st.delete(num))); } catch(e){} }
     return;
   }
   return idb(db => idbReq(db, 'readwrite', st => st.delete(+id)));
@@ -125,24 +142,25 @@ async function dbDel(id){
 async function dbGetBlob(id){
   if (FS) {
     const m = metaAll().find(x => String(x.id) === String(id));
-    if (!m) return null;
-    const r = await FS.readFile({ directory: DIR, path: 'tracks/' + m.id + '.bin' });
-    return base64ToBlob(r.data, m.type);
+    if (m) {
+      const r = await FS.readFile({ directory: DIR, path: 'tracks/' + m.id + '.bin' });
+      return base64ToBlob(r.data, m.type);
+    }
   }
   const t = await dbGet(id);
-  return t ? t.blob : null;
+  return t ? (t.blob || null) : null;
 }
 async function dbGetCoverBlob(id){
   if (FS) {
     const m = metaAll().find(x => String(x.id) === String(id));
-    if (!m || !m.coverSrc) return null;
-    const r = await FS.readFile({ directory: DIR, path: 'covers/' + m.id + '.bin' });
-    return base64ToBlob(r.data, 'image/jpeg');
+    if (m && m.coverSrc) {
+      const r = await FS.readFile({ directory: DIR, path: 'covers/' + m.id + '.bin' });
+      return base64ToBlob(r.data, 'image/jpeg');
+    }
   }
   const t = await dbGet(id);
   return t ? (t.cover || null) : null;
 }
-/* запасной путь: добавить напрямую в IndexedDB (если файловый режим сбоит) */
 async function dbAddIDB(rec){
   return idb(db => idbReq(db, 'readwrite', st => st.add(rec)));
 }
@@ -153,8 +171,11 @@ async function trackUrl(id){
   const t = await dbGet(id);
   if (!t) return '';
   if (t.fileSrc) return t.fileSrc;
-  if (_urls.has(id)) return _urls.get(id);
-  const u = URL.createObjectURL(t.blob);
-  _urls.set(id, u);
-  return u;
-}
+  if (t.blob) {
+    if (_urls.has(id)) return _urls.get(id);
+    const u = URL.createObjectURL(t.blob);
+    _urls.set(id, u);
+    return u;
+  }
+  return '';
+  }
