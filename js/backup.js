@@ -1,4 +1,4 @@
-/* Резервные копии библиотеки: экспорт/импорт zip. Файл только у тебя. */
+/ Резерв /
 async function exportBackup(){
   if (!window.JSZip) { toast('JSZip не загрузился (нужен интернет)'); return; }
   const tracks = await dbAll();
