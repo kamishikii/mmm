@@ -50,7 +50,7 @@ Screens.add_music = {
       if (!pending.length) return;
       const btn = $('#a-save');
       btn.disabled = true;
-      let ok = 0, fail = 0, lastErr = '';
+      let ok = 0, fail = 0, fb = 0, lastErr = '';
       for (const p of pending) {
         btn.textContent = 'Добавляем… ' + (ok + fail + 1) + '/' + pending.length;
         try {
@@ -61,6 +61,7 @@ Screens.add_music = {
           } catch (e1) {
             console.error('FS add failed, fallback to IDB:', e1);
             lastErr = (e1 && e1.message) || String(e1);
+                        fb++;
             await dbAddIDB(rec);
           }
           ok++;
@@ -74,6 +75,7 @@ Screens.add_music = {
       btn.disabled = false;
       btn.textContent = 'Добавить в мою музыку';
       if (fail) toast('Добавлено ' + ok + ', с ошибкой ' + fail + ': ' + lastErr);
+      else if (fb) toast('Добавлено: ' + ok + ' (запасным путём: ' + lastErr + ')');
       else toast('Добавлено треков: ' + ok);
       App.reset('home');
     };
