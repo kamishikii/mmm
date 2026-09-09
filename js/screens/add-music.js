@@ -1,4 +1,4 @@
-/* Экран 5: загрузка музыки с устройства */
+/ добавление треков /
 Screens.add_music = {
   async render(){
     const app = $('#app');
