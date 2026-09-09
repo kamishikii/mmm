@@ -1,5 +1,4 @@
-/* Хранилище: в APK — файлы + IndexedDB как запасной,
-   на сайте — IndexedDB. Список всегда объединяет оба места. */
+/ доп хранилище /
 
 let _db;
 
@@ -13,7 +12,7 @@ if (FS) {
   }
 }
 
-/* метаданные для файлового режима */
+/ данные /
 function metaAll(){ try { return JSON.parse(localStorage.getItem('vkm_meta')) || []; } catch(e){ return []; } }
 function metaSave(list){ localStorage.setItem('vkm_meta', JSON.stringify(list)); }
 
@@ -36,7 +35,7 @@ async function fileSrc(path){
   return Capacitor.convertFileSrc(u.uri);
 }
 
-/* ---------- IndexedDB ---------- */
+/ хуйнч /
 function dbOpen(){
   if (_db) return Promise.resolve(_db);
   return new Promise((res, rej) => {
@@ -71,7 +70,7 @@ async function idbAllSafe(){
   catch (e) { return []; }
 }
 
-/* ---------- общий интерфейс (объединяет оба хранилища) ---------- */
+/ хранилище опять /
 async function dbAll(){
   if (!FS) return idb(db => idbReq(db, 'readonly', st => st.getAll()));
   const metas = metaAll().map(m => Object.assign({}, m));
@@ -165,7 +164,7 @@ async function dbAddIDB(rec){
   return idb(db => idbReq(db, 'readwrite', st => st.add(rec)));
 }
 
-/* ссылка для воспроизведения */
+/ воспроизведение /
 const _urls = new Map();
 async function trackUrl(id){
   const t = await dbGet(id);
