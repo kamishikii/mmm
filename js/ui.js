@@ -1,4 +1,4 @@
-/* Иконки, шторки, тосты, форматирование, строки треков, редактор */
+/ иконки и прочее дерьмо /
 const ICONS = {
   back:'<svg viewBox="0 0 24 24"><path d="M19 12H5m7-7-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   search:'<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
@@ -32,7 +32,7 @@ function gradFor(str){
   const h1 = Math.abs(h) % 360, h2 = (h1 + 45) % 360;
   return 'linear-gradient(135deg, hsl(' + h1 + ',55%,45%), hsl(' + h2 + ',65%,28%))';
 }
-/* обложка: своя картинка, если есть, иначе градиент */
+/ обложка /
 function coverHTML(t, cls){
   const isObj = typeof t === 'object';
   const name = isObj ? (t.title || '') : String(t);
@@ -42,7 +42,7 @@ function coverHTML(t, cls){
     : 'background:' + gradFor(name);
   return '<div class="cover ' + (cls || '') + '" style="' + bg + '">' + (url ? '' : ICONS.note) + '</div>';
 }
-/* создать object-URL для сохранённых обложек */
+/ обложка /
 function withCovers(tracks){
   tracks.forEach(t => {
     if (t.coverUrl) return;
@@ -72,7 +72,7 @@ function toast(msg){
   clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2500);
 }
 
-/* ---------- шторки ---------- */
+/ штора /
 let _sheetToken = 0;
 function openSheet(html){
   _sheetToken++;
@@ -106,7 +106,7 @@ function promptSheet(title, initial, okLabel, onOk){
 }
 function confirmSheet(text, onYes){ sheetList(text, [{ label: 'Да, удалить', danger: true, onClick: onYes }]); }
 
-/* ---------- редактор трека (название, исполнитель, обложка) ---------- */
+/ редакт трека /
 function openEditSheet(t, onSaved){
   let newCover = null;
   openSheet('<div class="sheet-title">Информация о треке</div><div class="sheet-pad">' +
@@ -144,7 +144,7 @@ function openEditSheet(t, onSaved){
   };
 }
 
-/* ---------- строка трека ---------- */
+/ строка трека /
 function trackRowHTML(t){
   return '<div class="row track" data-id="' + t.id + '">' +
     coverHTML(t) +
@@ -152,7 +152,7 @@ function trackRowHTML(t){
     '<div class="dur">' + fmtTime(t.duration) + '</div>' +
     '<button class="iconbtn sm" data-dots="' + t.id + '">' + ICONS.dots + '</button></div>';
 }
-/* Перетаскивание строк долгим нажатием (~0.4 сек) */
+/ смена порядка треков /
 let suppressClick = false;
 function makeDraggable(container, opts){
   opts = opts || {};
