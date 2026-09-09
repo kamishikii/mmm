@@ -89,8 +89,6 @@ Screens.home = {
         Player.play(current, current.findIndex(t => String(t.id) === sid));
       }
     };
-  }
-};
 
 /* меню «добавить в плейлист» (вызывается из экрана плеера) */
 function addToPlaylistSheet(trackId){
