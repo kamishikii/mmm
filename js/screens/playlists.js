@@ -1,4 +1,4 @@
-/* Экран 2: все плейлисты */
+/ все плейлисты /
 Screens.playlists = {
   async render(){
     const pls = Store.all();
