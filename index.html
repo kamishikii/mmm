@@ -16,11 +16,14 @@
   <div id="toast" class="toast"></div>
   <input type="file" id="file-input" accept="audio/*,.mp3,.ogg,.wav,.flac,.m4a,.aac" multiple hidden>
 
-  <!-- ВАЖНО: app.js ПЕРВЫМ, потому что объявляет Screens и App -->
-  <script src="js/app.js"></script>
+  <!-- подкл скриптов -->
+    <script src="js/app.js"></script>
   <script src="js/db.js"></script>
   <script src="js/store.js"></script>
+  <script src="js/remote.js"></script>
   <script src="js/ui.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="js/backup.js"></script>
   <script src="js/player.js"></script>
   <script src="js/screens/home.js"></script>
   <script src="js/screens/playlists.js"></script>
@@ -28,5 +31,7 @@
   <script src="js/screens/playlist-edit.js"></script>
   <script src="js/screens/add-music.js"></script>
   <script src="js/screens/player.js"></script>
+</body>
+</html>
 </body>
 </html>
