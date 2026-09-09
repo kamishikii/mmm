@@ -1,4 +1,4 @@
-/* Мини-плеер + логика воспроизведения + MediaSession */
+/ плеер + логика/
 const Player = {
   audio: new Audio(),
   queue: [], index: -1, pct: 0,
@@ -50,7 +50,7 @@ const Player = {
     else this.audio.currentTime = 0;
   },
   
-  /* Обновление метаданных для системного плеера */
+  / обновление /
   updateMediaSession(){
     const t = this.cur();
     if (!t || !navigator.mediaSession) return;
