@@ -1,4 +1,4 @@
-/* Плейлисты в localStorage + утилиты имён/времени */
+/ плейлисты /
 const Store = {
   key: 'vkm_playlists',
   all(){ try { return JSON.parse(localStorage.getItem(this.key)) || []; } catch(e){ return []; } },
@@ -25,6 +25,6 @@ function parseFileName(name){
   if (m.length >= 2) return { artist: m[0].trim(), title: m.slice(1).join(' - ').trim() };
   return { artist: 'Неизвестный исполнитель', title: base || name };
 }
-/* Порядок песен на главной (сохраняется) */
+/ порядок треков /
 function getOrder(){ try { return JSON.parse(localStorage.getItem('vkm_order')) || []; } catch(e){ return []; } }
 function setOrder(ids){ localStorage.setItem('vkm_order', JSON.stringify(ids)); }
