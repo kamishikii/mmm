@@ -1,4 +1,4 @@
-/* Полноэкранный плеер */
+/ фул плеер /
 Screens.player = {
   async render(){
     if (!Player.cur()) { App.back(); return; }
