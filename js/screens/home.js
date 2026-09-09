@@ -4,7 +4,6 @@ Screens.home = {
     const tracks = withCovers(await dbAll())
       .concat(typeof remoteTracks === 'function' ? await remoteTracks() : []);
 
-    /* сортировка: сохранённый порядок, а новинки (без позиции) — сверху */
     const order = getOrder();
     const pos = {}; order.forEach((id, i) => { pos[String(id)] = i; });
     const sorted = tracks.slice().sort((a, b) => {
@@ -41,7 +40,6 @@ Screens.home = {
     };
     draw(sorted);
 
-    /* перетаскивание: только когда поиск не включён */
     makeDraggable(list, {
       enabled: () => !filtered,
       onCommit: ids => {
@@ -53,15 +51,17 @@ Screens.home = {
     });
 
     $('#h-back').onclick = () => App.back();
-    $('#h-dl').onclick = () => sheetList('Резервная копия', [
-  { label: 'Экспорт копии (файл .zip)', onClick: () => exportBackup() },
-  { label: 'Импорт копии из файла', onClick: () => {
-      const i = document.createElement('input');
-      i.type = 'file'; i.accept = '.zip,application/zip';
-      i.onchange = () => { if (i.files[0]) importBackup(i.files[0]); };
-      i.click();
-    } }
-]);
+    $('#h-dl').onclick = () => {
+      if (typeof exportBackup === 'function') {
+        sheetList('Резервная копия', [
+          { label: 'Экспорт копии (файл .zip)', onClick: () => exportBackup() },
+          { label: 'Импорт копии из файла', onClick: () => {
+              const i = document.createElement('input');
+              i.type = 'file'; i.accept = '.zip,application/zip';
+              i.onchange = () => { if (i.files[0]) importBackup(i.files[0]); };
+              i.click();
+            } }
+        ]);
       } else {
         toast('Скачивание появится позже');
       }
@@ -89,6 +89,8 @@ Screens.home = {
         Player.play(current, current.findIndex(t => String(t.id) === sid));
       }
     };
+  }
+};
 
 /* меню «добавить в плейлист» (вызывается из экрана плеера) */
 function addToPlaylistSheet(trackId){
@@ -108,4 +110,4 @@ function addToPlaylistSheet(trackId){
         });
       } }])
   );
-}
+            }
