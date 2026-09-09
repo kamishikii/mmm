@@ -1,4 +1,4 @@
-/* Роутер экранов + старт */
+/ экран /
 const Screens = {};
 const App = {
   stack: [],
