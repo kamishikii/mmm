@@ -1,4 +1,4 @@
-/* Экран 1: главная («Моя музыка») */
+/ главная /
 Screens.home = {
   async render(){
     const tracks = withCovers(await dbAll())
@@ -92,7 +92,7 @@ Screens.home = {
   }
 };
 
-/* меню «добавить в плейлист» (вызывается из экрана плеера) */
+/ добавлееие в плейлист /
 function addToPlaylistSheet(trackId){
   const pls = Store.all();
   sheetList('Добавить в плейлист',
