@@ -1,4 +1,4 @@
-/* Экран 4: «Добавить музыку» — галочки + сохранение */
+/ добавление треков /
 Screens.playlist_edit = {
   async render(params){
     const pl = Store.get(params.id);
